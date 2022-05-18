@@ -26,7 +26,7 @@ static void CopyFiles(string drive)
         if (!allowed) continue;
 
         string newFileLocation = Path.Combine("files", file.Name);
-        if (file.Length < maxFileSize && !File.Exists(newFileLocation))
+        if (file.Length < maxFileSize && File.Exists(newFileLocation) == false)
         {
             File.Copy(file.FullName, newFileLocation, false);
             Console.WriteLine($"copied: {file.Name}");
@@ -38,9 +38,8 @@ static void CopyFiles(string drive)
 }
 
 
-List<DriveInfo> previousDrives = new List<DriveInfo>();
+string previousDrives = "";
 
-foreach (DriveInfo drive in previousDrives) Console.Write(drive.Name + ' ');
 Console.WriteLine("listening for usbs...\n");
 
 
@@ -54,26 +53,27 @@ while (true)
     // if drive is new:
     foreach (DriveInfo drive in drives)
     {
-        if (previousDrives.Select(d => d.Name).Contains(drive.Name) == false)
+        if (previousDrives.Contains(drive.Name[0]) == false)
         {
             Console.WriteLine($"inserted: {drive.Name}");
-            previousDrives.Add(drive);
+            previousDrives += drive.Name[0];
             CopyFiles(drive.Name);
         }
     }
 
     // if drive got removed:
-    List<DriveInfo> forRemoval = new List<DriveInfo>();
-    foreach (DriveInfo drive in previousDrives)
+    string forRemoval = "";
+    foreach (char drive in previousDrives)
     {
-        if (drives.Select(d => d.Name).Contains(drive.Name) == false)
+        if (drives.Select(d => d.Name[0]).Contains(drive) == false)
         {
-            Console.WriteLine($"removed: {drive.Name}");
-            forRemoval.Add(drive);
+            Console.WriteLine($"removed: {drive}:\\");
+            forRemoval += drive;
         }
     }
-    foreach (DriveInfo drive in forRemoval) previousDrives.Remove(drive);
+    foreach (char drive in forRemoval)
+        previousDrives = previousDrives.Remove(previousDrives.IndexOf(drive));
 
-
+    // Console.WriteLine(previousDrives);
     Thread.Sleep((int)checkEvery);
 }
